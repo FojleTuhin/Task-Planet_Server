@@ -128,10 +128,25 @@ async function run() {
       const options = { upsert: true };
       const updateUser = req.body;
 
+      let baseHandle = updateUser.handle.replace(/\s+/g, '').toLowerCase(); // Remove spaces and lowercase the name
+      let handle = baseHandle;
+
+      // Check if the handle already exists in the database
+      let existingUser = await usersCollection.findOne({ socialMediaHandle: handle });
+
+      // If handle exists, add a number to make it unique
+      let suffix = 1;
+      while (existingUser) {
+        handle = `${baseHandle}${suffix}`;
+        existingUser = await usersCollection.findOne({ socialMediaHandle: handle });
+        suffix++;
+      }
+
+
       const user = {
         $set: {
           name: updateUser.name,
-          socialMediaHandle: updateUser.handle,
+          socialMediaHandle: handle
         },
         $push: {
           photos: { $each: updateUser.imageURLs }
